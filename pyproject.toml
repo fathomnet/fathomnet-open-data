@@ -1,0 +1,19 @@
+[project]
+name = "fathomnet-open-data"
+version = "0.1.0"
+description = "Documentation and tutorials for FathomNet on the Registry of Open Data on AWS"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3>=1.43.116",
+    "duckdb>=2.0.0",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pillow>=13.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.6.4",
+    "nbstripout>=0.9.1",
+    "ruff>=0.17.1",
+]
