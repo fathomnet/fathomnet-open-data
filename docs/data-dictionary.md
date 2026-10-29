@@ -13,7 +13,6 @@ Join keys:
 images.image_uuid  1 --- *  boxes.image_uuid
 images.image_uuid  1 --- *  tags.image_uuid
 images.image_uuid  * --- *  collections.collection_uuid   (via image_collections)
-boxes.concept      * --- 1  concepts.concept
 boxes.box_uuid     1 --- *  masks.box_uuid                 (planned)
 ```
 
@@ -50,7 +49,7 @@ One row per bounding box annotation.
 |---|---|---|
 | `box_uuid` | string | FathomNet bounding box UUID. |
 | `image_uuid` | string | Image the box belongs to. |
-| `concept` | string | Primary label. Usually a [WoRMS](https://www.marinespecies.org/) scientific name at any rank (e.g. `Bathochordaeus stygius`, `Sebastes`); sometimes a non-taxon such as `Rock` or `trash`. See `concepts`. |
+| `concept` | string | Primary label. Usually a [WoRMS](https://www.marinespecies.org/) scientific name at any rank (e.g. `Bathochordaeus stygius`, `Sebastes`); sometimes a non-taxon such as `Rock` or `trash`. Labels are free text; see [Taxonomy](#taxonomy). |
 | `alt_concept` | string | Optional secondary label, e.g. a part (`head`) or alternate identification. |
 | `x`, `y` | int32 | **Top-left** corner in pixels, origin at the image's top-left. |
 | `width`, `height` | int32 | Box size in pixels. |
@@ -108,21 +107,17 @@ Many-to-many link between images and collections. An image can appear in more th
 | `image_uuid` | string | Image. |
 | `collection_uuid` | string | Collection. |
 
-## `concepts`
+## Taxonomy
 
-One row per distinct `boxes.concept`, resolved against FathomNet's
-[WoRMS](https://www.marinespecies.org/) mirror at release time. Rank columns use Darwin Core term names,
-so `class` and `order` need quoting in SQL (`"class"` in DuckDB, `` `order` `` in Athena).
+`boxes.concept` is a free-text label. Most labels are [WoRMS](https://www.marinespecies.org/) scientific
+names, at whatever rank the annotator could identify, but nothing in the bucket enforces that. To resolve
+labels to accepted names, synonyms, or lineage (for example, to roll species up to family), use
+FathomNet's WoRMS name server at https://database.fathomnet.org/worms
+([API docs](https://database.fathomnet.org/worms/docs)), for example:
 
-| Column | Type | Description |
-|---|---|---|
-| `concept` | string | Label as used in `boxes.concept`. |
-| `is_taxon` | boolean | `false` for non-taxa such as `Rock` or equipment. |
-| `aphia_id` | int64 | WoRMS AphiaID of the matched name. |
-| `accepted_aphia_id` | int64 | AphiaID of the currently accepted name (differs for synonyms). |
-| `accepted_name` | string | Currently accepted scientific name. |
-| `rank` | string | Taxonomic rank of the concept, e.g. `Species`, `Genus`, `Family`. |
-| `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `species` | string | Lineage of the accepted name. Ranks below the concept's own rank are null. |
+```bash
+curl -s https://database.fathomnet.org/worms/ancestors/Atolla
+```
 
 ## `masks` (planned)
 

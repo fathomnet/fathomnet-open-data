@@ -20,7 +20,6 @@ s3://fathomnet-pds/
     tags/release=<YYYY-MM-DD>/part-<n>.parquet
     collections/release=<YYYY-MM-DD>/part-<n>.parquet
     image_collections/release=<YYYY-MM-DD>/part-<n>.parquet
-    concepts/release=<YYYY-MM-DD>/part-<n>.parquet
     masks/release=<YYYY-MM-DD>/part-<n>.parquet        (planned)
   exports/
     coco/release=<YYYY-MM-DD>/fathomnet-boxes.json

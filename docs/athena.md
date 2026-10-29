@@ -77,51 +77,25 @@ TBLPROPERTIES (
   'projection.release.range' = '2026-01-01,NOW',
   'storage.location.template' = 's3://fathomnet-pds/metadata/boxes/release=${release}/'
 );
-
-CREATE EXTERNAL TABLE fathomnet.concepts (
-  concept string,
-  is_taxon boolean,
-  aphia_id bigint,
-  accepted_aphia_id bigint,
-  accepted_name string,
-  rank string,
-  kingdom string,
-  phylum string,
-  `class` string,
-  `order` string,
-  family string,
-  genus string,
-  species string
-)
-PARTITIONED BY (release string)
-STORED AS PARQUET
-LOCATION 's3://fathomnet-pds/metadata/concepts/'
-TBLPROPERTIES (
-  'projection.enabled' = 'true',
-  'projection.release.type' = 'date',
-  'projection.release.format' = 'yyyy-MM-dd',
-  'projection.release.range' = '2026-01-01,NOW',
-  'storage.location.template' = 's3://fathomnet-pds/metadata/concepts/release=${release}/'
-);
 ```
 
 The `tags`, `collections`, and `image_collections` tables follow the same pattern; see
 [data-dictionary.md](data-dictionary.md) for their columns.
 
-## Example: verified boxes per phylum below 1000 m
+## Example: most common verified labels below 1000 m
 
 Always filter on `release` so Athena scans one snapshot.
 
 ```sql
-SELECT c.phylum, count(*) AS n_boxes
+SELECT b.concept, count(*) AS n_boxes
 FROM fathomnet.boxes b
 JOIN fathomnet.images i ON i.image_uuid = b.image_uuid AND i.release = b.release
-JOIN fathomnet.concepts c ON c.concept = b.concept AND c.release = b.release
 WHERE b.release = '2026-11-01'
   AND b.review_state = 'VERIFIED'
   AND i.depth_meters > 1000
-GROUP BY c.phylum
-ORDER BY n_boxes DESC;
+GROUP BY b.concept
+ORDER BY n_boxes DESC
+LIMIT 50;
 ```
 
 Select `DISTINCT i.s3_key` instead of the aggregate to get a manifest of matching images. A training

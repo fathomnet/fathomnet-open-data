@@ -22,8 +22,8 @@ without downloading the whole corpus.
 - **Images**: every public FathomNet image, byte-for-byte as contributed (JPEG, PNG, TIFF), keyed by
   image UUID.
 - **Thumbnails**: a small JPEG for every image, for browsing and quick-look visualization.
-- **Metadata**: Parquet tables for images, bounding boxes, tags, collections (Darwin Core), and the
-  taxonomic concepts used as labels, versioned by release.
+- **Metadata**: Parquet tables for images, bounding boxes, tags, and collections (Darwin Core),
+  versioned by release.
 - **Exports**: COCO object detection JSON for the full corpus.
 - **Video** (planned): source video that FathomNet frames were extracted from.
 
