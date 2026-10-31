@@ -25,8 +25,8 @@ One row per image.
 | `s3_key` | string | Key of the original image in this bucket, e.g. `images/<uuid>.png`. |
 | `thumbnail_s3_key` | string | Key of the 512 px JPEG thumbnail. |
 | `source_url` | string | URL the image was contributed from. May point outside AWS. |
-| `sha256` | string | Hex SHA-256 of the image bytes. |
-| `media_type` | string | MIME type, e.g. `image/png`. |
+| `sha256` | string | Lowercase hex SHA-256 of the image bytes, verified when the image was copied. |
+| `media_type` | string | MIME type detected from the image bytes: `image/jpeg`, `image/png`, or `image/tiff`. |
 | `width`, `height` | int32 | Image size in pixels. |
 | `image_license` | string | [SPDX id](https://spdx.org/licenses/) of the image license, e.g. `CC-BY-4.0`. |
 | `imaging_type` | string | Free text platform/method, e.g. `ROV`, `Drop Camera`. Often null. |
@@ -70,6 +70,7 @@ Free-form key/value tags attached to images by contributors.
 
 | Column | Type | Description |
 |---|---|---|
+| `tag_uuid` | string | FathomNet tag UUID. |
 | `image_uuid` | string | Tagged image. |
 | `key` | string | Tag name. |
 | `value` | string | Tag value. |
@@ -93,8 +94,7 @@ One row per contributed collection (an image set upload), with
 | `access_rights` | string | Darwin Core `accessRights`. |
 | `record_type` | string | Darwin Core `type`, usually `StillImage`. |
 | `basis_of_record` | string | Darwin Core `basisOfRecord`. |
-| `image_license` | string | SPDX id applied to this collection's images. |
-| `annotation_license` | string | SPDX id applied to this collection's annotations. |
+| `license_statement` | string | Contributor's free-text license statement for the collection. The per-asset `image_license` and `annotation_license` columns are authoritative. |
 | `created_timestamp` | timestamp | When the collection was uploaded. |
 
 ## `image_collections`
@@ -129,7 +129,9 @@ curl -s https://database.fathomnet.org/worms/ancestors/Atolla
 ## Not included
 
 Contributor, observer, and reviewer email addresses recorded in the FathomNet Database are personal
-information and are not published in this bucket.
+information and are not published in this bucket. The release pipeline refuses to publish any table
+value that looks like an email address. Images the FathomNet validation job has not confirmed as
+valid (for example, broken source links) are also left out.
 
 ## COCO export
 

@@ -1,7 +1,7 @@
 [project]
 name = "fathomnet-open-data"
 version = "0.1.0"
-description = "Documentation and tutorials for FathomNet on the Registry of Open Data on AWS"
+description = "Documentation, tutorial, and release pipeline for FathomNet on the Registry of Open Data on AWS"
 requires-python = ">=3.11"
 dependencies = [
     "boto3>=1.43.116",
@@ -9,11 +9,24 @@ dependencies = [
     "matplotlib>=3.11.2",
     "pandas>=3.0.6",
     "pillow>=13.0.0",
+    "pyarrow>=26.0.0",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]
 dev = [
     "jupyterlab>=4.6.4",
     "nbstripout>=0.9.1",
+    "pytest>=9.2.0",
     "ruff>=0.17.1",
 ]
+
+[project.scripts]
+fathomnet-release = "fathomnet_open_data.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

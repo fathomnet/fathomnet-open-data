@@ -2,3 +2,5 @@
 __pycache__/
 .ipynb_checkpoints/
 .ruff_cache/
+work/
+.pytest_cache/
