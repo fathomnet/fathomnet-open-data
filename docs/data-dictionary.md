@@ -13,7 +13,6 @@ Join keys:
 images.image_uuid  1 --- *  boxes.image_uuid
 images.image_uuid  1 --- *  tags.image_uuid
 images.image_uuid  * --- *  collections.collection_uuid   (via image_collections)
-boxes.box_uuid     1 --- *  masks.box_uuid                 (planned)
 ```
 
 ## `images`
@@ -118,20 +117,6 @@ FathomNet's WoRMS name server at https://database.fathomnet.org/worms
 ```bash
 curl -s https://database.fathomnet.org/worms/ancestors/Atolla
 ```
-
-## `masks` (planned)
-
-Instance segmentation masks, including those contributed by Meta from the Segment Anything Model 3
-(SAM 3) collaboration. Schema to be finalized.
-
-| Column | Type | Description |
-|---|---|---|
-| `mask_uuid` | string | Mask id. |
-| `box_uuid` | string | Bounding box the mask refines. |
-| `image_uuid` | string | Image. |
-| `encoding` | string | Mask encoding, e.g. `coco_rle`. |
-| `counts` | string | Encoded mask. |
-| `annotation_license` | string | SPDX id of the mask's license. |
 
 ## `releases.csv`
 
