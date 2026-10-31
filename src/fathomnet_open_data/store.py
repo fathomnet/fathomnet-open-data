@@ -1,14 +1,18 @@
 """Object store abstraction: the public S3 bucket, or a local directory for dry runs and tests."""
 
+import io
 import shutil
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
+import pyarrow.parquet as pq
+
 from .keys import (
     DEFAULT_REGION,
     IMAGES_PREFIX,
+    MANIFEST_PREFIX,
     THUMBNAILS_PREFIX,
     s3_public_base_url,
     uuid_from_key,
@@ -130,10 +134,14 @@ class S3Store:
 
 @dataclass
 class StoreIndex:
-    """Existing objects in the store, keyed by image UUID."""
+    """Existing objects in the store, keyed by image UUID.
+
+    `checksums` comes from the manifest that sync writes, so it reflects the bytes actually stored.
+    """
 
     images: dict[str, str] = field(default_factory=dict)
     thumbnails: set[str] = field(default_factory=set)
+    checksums: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def load(cls, store: Store) -> "StoreIndex":
@@ -141,10 +149,20 @@ class StoreIndex:
         for key in store.list_keys(IMAGES_PREFIX):
             index.images[uuid_from_key(key)] = key
         index.thumbnails = {uuid_from_key(k) for k in store.list_keys(THUMBNAILS_PREFIX)}
+        # Later parts win; part names sort by sync run.
+        for key in sorted(store.list_keys(MANIFEST_PREFIX)):
+            part = pq.read_table(io.BytesIO(store.get_bytes(key)), columns=["image_uuid", "sha256"])
+            index.checksums.update(
+                zip(part["image_uuid"].to_pylist(), part["sha256"].to_pylist(), strict=True)
+            )
         return index
 
     def complete(self, image_uuid: str) -> bool:
-        return image_uuid in self.images and image_uuid in self.thumbnails
+        return (
+            image_uuid in self.images
+            and image_uuid in self.thumbnails
+            and image_uuid in self.checksums
+        )
 
 
 def open_store(uri: str, region: str = DEFAULT_REGION) -> Store:

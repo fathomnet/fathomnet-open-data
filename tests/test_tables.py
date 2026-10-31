@@ -26,7 +26,7 @@ def test_rows_match_schema_columns():
     img = make_image("u1", "https://x/a.png", png_bytes(), boxes=[make_box("b1")])
     tag = {"uuid": "t1", "key": "k", "value": "v", "mediaType": "text/plain"}
     rows = {
-        "images": image_row(img, "images/u1.png"),
+        "images": image_row(img, "images/u1.png", "abc"),
         "boxes": box_row(img["boundingBoxes"][0], "u1"),
         "tags": tag_row(tag, "u1"),
         "collections": collection_row({"uuid": "c1", "darwinCore": {}}),
@@ -37,8 +37,8 @@ def test_rows_match_schema_columns():
 
 
 def test_image_row_derives_media_type_from_key():
-    img = make_image("u1", "https://x/a.PNG", png_bytes(), sha="ABC")
-    row = image_row(img, "images/u1.jpg")
+    img = make_image("u1", "https://x/a.PNG", png_bytes(), sha="stale")
+    row = image_row(img, "images/u1.jpg", "stored")
     assert row["media_type"] == "image/jpeg"
-    assert row["sha256"] == "abc"
+    assert row["sha256"] == "stored"  # from the manifest, not FathomNet
     assert row["thumbnail_s3_key"] == "thumbnails/u1.jpg"

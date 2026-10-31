@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 
 IMAGES_PREFIX = "images/"
 THUMBNAILS_PREFIX = "thumbnails/"
+MANIFEST_PREFIX = "manifests/objects/"
 RELEASES_KEY = "metadata/releases.csv"
 DEFAULT_REGION = "us-west-2"
 
@@ -30,6 +31,10 @@ def thumbnail_key(image_uuid: str) -> str:
 
 def uuid_from_key(key: str) -> str:
     return PurePosixPath(key).stem
+
+
+def manifest_key(run_id: str, seq: int) -> str:
+    return f"{MANIFEST_PREFIX}part-{run_id}-{seq:05d}.parquet"
 
 
 def table_prefix(table: str, release: str) -> str:

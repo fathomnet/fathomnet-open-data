@@ -20,6 +20,8 @@ s3://fathomnet-pds/
     tags/release=<YYYY-MM-DD>/part-<n>.parquet
     collections/release=<YYYY-MM-DD>/part-<n>.parquet
     image_collections/release=<YYYY-MM-DD>/part-<n>.parquet
+  manifests/
+    objects/part-<run>-<n>.parquet   SHA-256 and size of every image object
   exports/
     coco/release=<YYYY-MM-DD>/fathomnet-boxes.json
   video/                         (planned) Source video
@@ -34,7 +36,8 @@ The file extension matches the original format; use the `s3_key` column in the `
 than constructing keys yourself.
 
 **Images are stored as contributed.** No re-encoding, resizing, or color correction. The SHA-256 of each
-object is recorded in the `images` table (`sha256`) so you can verify downloads.
+object is recorded in the `images` table (`sha256`) and in `manifests/objects/` so you can verify
+downloads.
 
 **Thumbnails are for browsing.** Every image has a JPEG thumbnail with its longest side scaled to 512 px.
 They are convenient for quick looks, dashboards, and embedding sanity checks. Train on the originals.

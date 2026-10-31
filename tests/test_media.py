@@ -3,7 +3,7 @@ import io
 import pytest
 from PIL import Image
 
-from fathomnet_open_data.media import UnsupportedImage, detect_format, make_thumbnail
+from fathomnet_open_data.media import ImageInfo, UnsupportedImage, inspect_image, make_thumbnail
 
 
 def encode(im: Image.Image, fmt: str) -> bytes:
@@ -21,20 +21,20 @@ def decode(data: bytes) -> Image.Image:
 @pytest.mark.parametrize(
     ("fmt", "expected"),
     [
-        ("PNG", ("png", "image/png")),
-        ("JPEG", ("jpg", "image/jpeg")),
-        ("TIFF", ("tif", "image/tiff")),
+        ("PNG", ImageInfo("png", "image/png", 8, 6)),
+        ("JPEG", ImageInfo("jpg", "image/jpeg", 8, 6)),
+        ("TIFF", ImageInfo("tif", "image/tiff", 8, 6)),
     ],
 )
-def test_detect_format(fmt, expected):
-    assert detect_format(encode(Image.new("RGB", (8, 8)), fmt)) == expected
+def test_inspect_image(fmt, expected):
+    assert inspect_image(encode(Image.new("RGB", (8, 6)), fmt)) == expected
 
 
-def test_detect_format_rejects_unsupported_and_garbage():
+def test_inspect_image_rejects_unsupported_and_garbage():
     with pytest.raises(UnsupportedImage, match="GIF"):
-        detect_format(encode(Image.new("P", (8, 8)), "GIF"))
+        inspect_image(encode(Image.new("P", (8, 8)), "GIF"))
     with pytest.raises(UnsupportedImage):
-        detect_format(b"<html>not found</html>")
+        inspect_image(b"<html>not found</html>")
 
 
 def test_thumbnail_scales_longest_side():

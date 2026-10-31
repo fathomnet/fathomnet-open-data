@@ -97,6 +97,17 @@ TABLES: dict[str, pa.Schema] = {
     "image_collections": IMAGE_COLLECTIONS,
 }
 
+# Checksum manifest written by sync under manifests/objects/. Not a release table.
+MANIFEST = pa.schema(
+    [
+        ("image_uuid", pa.string()),
+        ("s3_key", pa.string()),
+        ("sha256", pa.string()),
+        ("size_bytes", pa.int64()),
+        ("synced_timestamp", TIMESTAMP),
+    ]
+)
+
 # Primary key columns, used for uniqueness checks.
 PRIMARY_KEYS: dict[str, tuple[str, ...]] = {
     "images": ("image_uuid",),

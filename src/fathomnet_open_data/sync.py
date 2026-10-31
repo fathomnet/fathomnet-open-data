@@ -1,21 +1,28 @@
-"""Step 2: copy public images into the store and generate thumbnails.
+"""Step 2: copy public images into the store, generate thumbnails, and record checksums.
 
-The store itself is the state: an image is skipped if its original and thumbnail already exist.
-Image objects are immutable, so a later release never rewrites them.
+The store itself is the state. An image is complete when its original, its thumbnail, and its
+manifest entry (SHA-256 and size of the stored bytes) all exist; anything missing is filled in on
+the next run. Image objects are immutable, so a later release never rewrites them.
 """
 
+import io
 import logging
 import threading
+import uuid
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import requests
 from PIL import Image
 
+from . import schema
 from .api import make_session
-from .keys import image_key, thumbnail_key
-from .media import detect_format, make_thumbnail, sha256_hex
+from .keys import image_key, manifest_key, thumbnail_key
+from .media import inspect_image, make_thumbnail, sha256_hex
 from .snapshot import is_public
 from .store import Store, StoreIndex
 
@@ -40,15 +47,6 @@ class HttpFetcher:
         return resp.content
 
 
-@dataclass
-class SyncResult:
-    candidates: int = 0
-    already_present: int = 0
-    images_uploaded: int = 0
-    thumbnails_uploaded: int = 0
-    failures: list[dict] = field(default_factory=list)
-
-
 class SyncError(RuntimeError):
     pass
 
@@ -64,24 +62,99 @@ PER_IMAGE_ERRORS = (
 )
 
 
-def _sync_one(image: dict, store: Store, fetch: Fetch, existing_key: str | None) -> bool:
-    """Ensure original and thumbnail exist. Return True if the original was uploaded."""
+@dataclass
+class SyncResult:
+    candidates: int = 0
+    already_present: int = 0
+    images_uploaded: int = 0
+    thumbnails_uploaded: int = 0
+    manifest_entries: int = 0
+    # FathomNet's stored sha256 disagreed with the bytes but the image size matched.
+    checksum_mismatches: list[dict] = field(default_factory=list)
+    failures: list[dict] = field(default_factory=list)
+
+
+@dataclass
+class Outcome:
+    image_uploaded: bool = False
+    thumbnail_uploaded: bool = False
+    manifest_row: dict | None = None
+    checksum_mismatch: dict | None = None
+
+
+def verify_download(image: dict, data: bytes) -> tuple[str, str, str, dict | None]:
+    """Check downloaded bytes against FathomNet. Return (sha256, ext, media type, mismatch).
+
+    FathomNet's stored sha256 is wrong for some images, so a mismatch is accepted when the image
+    decodes at the width and height FathomNet recorded; it is returned for reporting.
+    """
+    info = inspect_image(data)
+    digest = sha256_hex(data)
+    expected = (image.get("sha256") or "").lower()
+    mismatch = None
+    if expected != digest:
+        api_size = (image.get("width"), image.get("height"))
+        if (info.width, info.height) != api_size:
+            raise SyncError(
+                f"sha256 and size differ from FathomNet: API {expected or None} {api_size}, "
+                f"downloaded {digest} {(info.width, info.height)}"
+            )
+        mismatch = {"image_uuid": image["uuid"], "api_sha256": expected or None, "sha256": digest}
+    return digest, info.ext, info.media_type, mismatch
+
+
+def _sync_one(image: dict, store: Store, fetch: Fetch, index: StoreIndex) -> Outcome:
     image_uuid = image["uuid"]
-    if existing_key:
-        # Original already copied; only the thumbnail is missing.
-        data = store.get_bytes(existing_key)
-        uploaded = False
+    outcome = Outcome()
+    key = index.images.get(image_uuid)
+    if key:
+        data = store.get_bytes(key)
+        digest = sha256_hex(data)
     else:
         data = fetch(image["url"])
-        digest = sha256_hex(data)
-        expected = (image.get("sha256") or "").lower()
-        if expected and expected != digest:
-            raise SyncError(f"sha256 mismatch: API {expected}, downloaded {digest}")
-        ext, media_type = detect_format(data)
-        store.put_bytes(image_key(image_uuid, ext), data, media_type, metadata={"sha256": digest})
-        uploaded = True
-    store.put_bytes(thumbnail_key(image_uuid), make_thumbnail(data), "image/jpeg")
-    return uploaded
+        digest, ext, media_type, outcome.checksum_mismatch = verify_download(image, data)
+        key = image_key(image_uuid, ext)
+        store.put_bytes(key, data, media_type, metadata={"sha256": digest})
+        outcome.image_uploaded = True
+    if image_uuid not in index.thumbnails:
+        store.put_bytes(thumbnail_key(image_uuid), make_thumbnail(data), "image/jpeg")
+        outcome.thumbnail_uploaded = True
+    if image_uuid not in index.checksums or outcome.image_uploaded:
+        outcome.manifest_row = {
+            "image_uuid": image_uuid,
+            "s3_key": key,
+            "sha256": digest,
+            "size_bytes": len(data),
+            "synced_timestamp": datetime.now(UTC),
+        }
+    return outcome
+
+
+class ManifestWriter:
+    """Buffers manifest rows and writes them to the store in parts."""
+
+    def __init__(self, store: Store, part_size: int = 5000):
+        self.store = store
+        self.part_size = part_size
+        self.run_id = f"{datetime.now(UTC):%Y%m%dT%H%M%SZ}-{uuid.uuid4().hex[:8]}"
+        self.rows: list[dict] = []
+        self.seq = 0
+
+    def add(self, row: dict) -> None:
+        self.rows.append(row)
+        if len(self.rows) >= self.part_size:
+            self.flush()
+
+    def flush(self) -> None:
+        if not self.rows:
+            return
+        buf = io.BytesIO()
+        pq.write_table(pa.Table.from_pylist(self.rows, schema=schema.MANIFEST), buf)
+        self.store.put_bytes(
+            manifest_key(self.run_id, self.seq), buf.getvalue(), "application/vnd.apache.parquet"
+        )
+        self.seq += 1
+        self.rows = []
 
 
 def sync_objects(
@@ -113,21 +186,29 @@ def sync_objects(
         len(todo),
     )
 
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {
-            pool.submit(_sync_one, img, store, fetch, index.images.get(img["uuid"])): img
-            for img in todo
-        }
-        for i, future in enumerate(as_completed(futures), 1):
-            img = futures[future]
-            try:
-                if future.result():
-                    result.images_uploaded += 1
-                result.thumbnails_uploaded += 1
-            except PER_IMAGE_ERRORS as e:
-                result.failures.append(
-                    {"image_uuid": img["uuid"], "url": img.get("url"), "error": str(e)}
-                )
-            if i % 1000 == 0:
-                log.info("synced %d/%d (%d failures)", i, len(todo), len(result.failures))
+    manifest = ManifestWriter(store)
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(_sync_one, img, store, fetch, index): img for img in todo}
+            for i, future in enumerate(as_completed(futures), 1):
+                img = futures[future]
+                try:
+                    outcome = future.result()
+                except PER_IMAGE_ERRORS as e:
+                    result.failures.append(
+                        {"image_uuid": img["uuid"], "url": img.get("url"), "error": str(e)}
+                    )
+                else:
+                    result.images_uploaded += outcome.image_uploaded
+                    result.thumbnails_uploaded += outcome.thumbnail_uploaded
+                    if outcome.checksum_mismatch:
+                        result.checksum_mismatches.append(outcome.checksum_mismatch)
+                    if outcome.manifest_row:
+                        manifest.add(outcome.manifest_row)
+                        result.manifest_entries += 1
+                if i % 1000 == 0:
+                    log.info("synced %d/%d (%d failures)", i, len(todo), len(result.failures))
+    finally:
+        # Record checksums for everything uploaded so far, even if the run is interrupted.
+        manifest.flush()
     return result

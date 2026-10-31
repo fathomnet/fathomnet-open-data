@@ -14,7 +14,7 @@ def documented_columns() -> dict[str, list[str]]:
     sections: dict[str, list[str]] = {}
     current = None
     for line in DOC.read_text().splitlines():
-        heading = re.match(r"^## `(\w+)`", line)
+        heading = re.match(r"^## `([\w/]+)`", line)
         if heading:
             current = sections.setdefault(heading.group(1), [])
         elif line.startswith("## "):
@@ -28,3 +28,7 @@ def documented_columns() -> dict[str, list[str]]:
 @pytest.mark.parametrize("table", list(schema.TABLES))
 def test_data_dictionary_matches_schema(table):
     assert documented_columns().get(table) == schema.TABLES[table].names
+
+
+def test_data_dictionary_documents_manifest():
+    assert documented_columns().get("manifests/objects") == schema.MANIFEST.names

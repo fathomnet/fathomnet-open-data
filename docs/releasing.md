@@ -9,16 +9,27 @@ thumbnails, Parquet, COCO) on our machines and use the account only for uploads.
 | Step | Command | What it does |
 |---|---|---|
 | 1 | `snapshot` | Pages the public FathomNet REST API (`/images`, `/imagesetuploads`, image-to-collection links) into `work/<release>/raw/`. |
-| 2 | `sync` | For every valid image not yet in the bucket: downloads it from its source URL, checks the SHA-256 against FathomNet, detects the format from the bytes, uploads `images/<uuid>.<ext>` and a 512 px `thumbnails/<uuid>.jpg`. |
-| 3 | `build` | Writes the five Parquet tables and the COCO export to `work/<release>/`. An image is included only if it is valid and both its objects are in the bucket. |
+| 2 | `sync` | For every valid image not yet in the bucket: downloads it from its source URL, verifies it against FathomNet (see below), detects the format from the bytes, uploads `images/<uuid>.<ext>` and a 512 px `thumbnails/<uuid>.jpg`, and records the SHA-256 and size in `manifests/objects/`. |
+| 3 | `build` | Writes the five Parquet tables and the COCO export to `work/<release>/`. An image is included only if it is valid and complete in the bucket (original, thumbnail, and manifest entry). |
 | 4 | `validate` | Checks schemas, keys, references, that every key exists, and that no value looks like an email address. Exits non-zero on errors. |
 | 5 | `publish` | Re-runs validation, uploads `metadata/<table>/release=<date>/`, the COCO export, and the bucket `README.md`/`LICENSE.md`, then updates `metadata/releases.csv` last. |
 
 `run` does all five in order. Each step writes `work/<release>/<step>-report.json`.
 
 **The bucket is the state.** Image objects are immutable and never rewritten, so `sync` only copies
-images that are new since the last release; a failed or interrupted sync can be rerun safely. The
-raw snapshot in `work/` contains contributor emails: keep it local and do not share it.
+images that are new since the last release. An image is complete when its original, thumbnail, and
+manifest entry all exist; a failed or interrupted sync fills in whatever is missing when rerun, without
+downloading images already in the bucket.
+
+**Checksums.** FathomNet's stored SHA-256 is wrong for some images (about 5% in a 2026-10 sample, all
+FathomVerse images on CloudFront, and 5,526 images store the hash of an empty file). `sync` therefore
+accepts an image whose checksum disagrees with FathomNet if it decodes at the width and height FathomNet
+recorded, and lists it under `checksum_mismatches` in the sync report. If both checksum and size
+disagree, the image is skipped and listed under `failures`. The published `sha256` is always computed
+from the stored bytes.
+
+**The raw snapshot is private.** `work/<release>/raw/` contains contributor emails: keep it local and
+do not share it. Only the tables built from it are published.
 
 **Releases are immutable.** `publish` refuses to overwrite an existing `release=<date>` partition
 unless you pass `--force`. Use a new date for a corrected release.

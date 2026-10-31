@@ -25,14 +25,15 @@ def parse_timestamp(value: str | None) -> datetime | None:
     return ts.astimezone(UTC) if ts.tzinfo else ts.replace(tzinfo=UTC)
 
 
-def image_row(img: dict, s3_key: str) -> dict:
+def image_row(img: dict, s3_key: str, sha256: str) -> dict:
+    """`sha256` is of the stored object (from the manifest), not FathomNet's stored value."""
     ext = PurePosixPath(s3_key).suffix.lstrip(".")
     return {
         "image_uuid": img["uuid"],
         "s3_key": s3_key,
         "thumbnail_s3_key": thumbnail_key(img["uuid"]),
         "source_url": img.get("url"),
-        "sha256": (img.get("sha256") or "").lower() or None,
+        "sha256": sha256,
         "media_type": MEDIA_TYPES.get(ext),
         "width": img.get("width"),
         "height": img.get("height"),
@@ -118,7 +119,7 @@ def build_tables(
     links: Iterable[dict],
     index: StoreIndex,
 ) -> BuildResult:
-    """An image is published only if it is public and both its objects are in the store."""
+    """An image is published only if it is public and complete in the store."""
     excluded = {"not_valid": 0, "missing_objects": 0, "rejected_collection": 0}
     image_rows, box_rows, tag_rows = [], [], []
 
@@ -130,7 +131,7 @@ def build_tables(
             excluded["missing_objects"] += 1
             continue
         image_uuid = img["uuid"]
-        image_rows.append(image_row(img, index.images[image_uuid]))
+        image_rows.append(image_row(img, index.images[image_uuid], index.checksums[image_uuid]))
         box_rows.extend(box_row(b, image_uuid) for b in img.get("boundingBoxes") or [])
         tag_rows.extend(tag_row(t, image_uuid) for t in img.get("tags") or [])
 

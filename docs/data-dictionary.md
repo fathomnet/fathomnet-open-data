@@ -27,7 +27,7 @@ One row per image.
 | `s3_key` | string | Key of the original image in this bucket, e.g. `images/<uuid>.png`. |
 | `thumbnail_s3_key` | string | Key of the 512 px JPEG thumbnail. |
 | `source_url` | string | URL the image was contributed from. May point outside AWS. |
-| `sha256` | string | Lowercase hex SHA-256 of the image bytes, verified when the image was copied. |
+| `sha256` | string | Lowercase hex SHA-256 of the object in this bucket. Use it to verify downloads. |
 | `media_type` | string | MIME type detected from the image bytes: `image/jpeg`, `image/png`, or `image/tiff`. |
 | `width`, `height` | int32 | Image size in pixels. |
 | `image_license` | string | [SPDX id](https://spdx.org/licenses/) of the image license, e.g. `CC-BY-4.0`. |
@@ -119,6 +119,20 @@ FathomNet's WoRMS name server at https://database.fathomnet.org/worms
 ```bash
 curl -s https://database.fathomnet.org/worms/ancestors/Atolla
 ```
+
+## `manifests/objects`
+
+A checksum manifest for every image object, written as images are copied into the bucket
+(`manifests/objects/part-<run>-<n>.parquet`). It is not versioned by release; the `images` table
+already carries the same `sha256` for each release.
+
+| Column | Type | Description |
+|---|---|---|
+| `image_uuid` | string | Image. |
+| `s3_key` | string | Key of the original image. |
+| `sha256` | string | Lowercase hex SHA-256 of the object. |
+| `size_bytes` | int64 | Object size in bytes. |
+| `synced_timestamp` | timestamp | When the entry was recorded. |
 
 ## `releases.csv`
 

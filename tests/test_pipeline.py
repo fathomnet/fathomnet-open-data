@@ -4,17 +4,27 @@ import csv
 import io
 import json
 
+import pyarrow.parquet as pq
 import pytest
 from PIL import Image
 
 from fathomnet_open_data import pipeline
-from fathomnet_open_data.keys import RELEASES_KEY, coco_key, table_key, thumbnail_key
+from fathomnet_open_data.keys import (
+    MANIFEST_PREFIX,
+    RELEASES_KEY,
+    coco_key,
+    table_key,
+    thumbnail_key,
+)
+from fathomnet_open_data.media import sha256_hex
 from fathomnet_open_data.schema import TABLES
+from fathomnet_open_data.store import StoreIndex
 
 A = "aaaaaaaa-0000-0000-0000-000000000001"
 B = "bbbbbbbb-0000-0000-0000-000000000002"
 INVALID = "cccccccc-0000-0000-0000-000000000003"
 MISMATCH = "dddddddd-0000-0000-0000-000000000004"
+WRONG_SIZE = "eeeeeeee-0000-0000-0000-000000000005"
 
 
 @pytest.fixture
@@ -26,9 +36,9 @@ def synced(fake_api, work, store, fetch):
 
 def test_snapshot_reused_unless_refresh(fake_api, work):
     first = pipeline.run_snapshot(fake_api, work)
-    assert first["images"] == 4 and first["image_upload_links"] == 4
+    assert first["images"] == 5 and first["image_upload_links"] == 4
     assert pipeline.run_snapshot(fake_api, work) == {"reused": True}
-    assert pipeline.run_snapshot(fake_api, work, refresh=True)["images"] == 4
+    assert pipeline.run_snapshot(fake_api, work, refresh=True)["images"] == 5
 
 
 def test_steps_require_snapshot(work, store):
@@ -39,10 +49,10 @@ def test_steps_require_snapshot(work, store):
 
 
 def test_sync_uploads_originals_and_thumbnails(synced, store):
-    assert synced["candidates"] == 3  # invalid image excluded
-    assert synced["images_uploaded"] == 2
-    assert [f["image_uuid"] for f in synced["failures"]] == [MISMATCH]
-    assert "sha256 mismatch" in synced["failures"][0]["error"]
+    assert synced["candidates"] == 4  # invalid image excluded
+    assert synced["images_uploaded"] == 3
+    assert [f["image_uuid"] for f in synced["failures"]] == [WRONG_SIZE]
+    assert "sha256 and size differ" in synced["failures"][0]["error"]
     assert store.exists(f"images/{A}.png")
     assert store.exists(f"images/{B}.jpg")  # extension from bytes
     assert not any(store.list_keys(f"images/{INVALID}"))
@@ -52,8 +62,60 @@ def test_sync_uploads_originals_and_thumbnails(synced, store):
 
 def test_sync_is_incremental(synced, work, store, fetch):
     again = pipeline.run_sync(work, store, fetch, workers=2)
-    assert again["already_present"] == 2
-    assert again["images_uploaded"] == 0
+    assert again["already_present"] == 3
+    assert again["images_uploaded"] == 0 and again["manifest_entries"] == 0
+
+
+def test_sync_accepts_bad_fathomnet_checksum_when_size_matches(synced, store, blobs):
+    actual = sha256_hex(blobs["https://img.test/bad-sha.png"])
+    assert synced["checksum_mismatches"] == [
+        {"image_uuid": MISMATCH, "api_sha256": "0" * 64, "sha256": actual}
+    ]
+    assert StoreIndex.load(store).checksums[MISMATCH] == actual
+
+
+def test_manifest_records_stored_bytes(synced, store):
+    index = StoreIndex.load(store)
+    assert set(index.checksums) == {A, B, MISMATCH}
+    for uuid, key in index.images.items():
+        assert index.checksums[uuid] == sha256_hex(store.get_bytes(key))
+
+
+def test_sync_rebuilds_lost_manifest_without_downloading(synced, work, store, blobs):
+    for key in list(store.list_keys(MANIFEST_PREFIX)):
+        (store.root / key).unlink()
+
+    def only_failed_image(url):
+        # The rejected image is retried; stored images are hashed from the store.
+        assert url.endswith("wrong-size.png"), f"should not download {url}"
+        return blobs[url]
+
+    again = pipeline.run_sync(work, store, only_failed_image, workers=2)
+    assert again["manifest_entries"] == 3 and again["images_uploaded"] == 0
+    assert set(StoreIndex.load(store).checksums) == {A, B, MISMATCH}
+
+
+def test_interrupted_sync_resumes(fake_api, work, store, blobs):
+    pipeline.run_snapshot(fake_api, work)
+
+    def crash_on_b(url):
+        if url.endswith("b.jpg"):
+            raise RuntimeError("simulated crash")  # not a per-image error: stops the run
+        return blobs[url]
+
+    with pytest.raises(RuntimeError):
+        pipeline.run_sync(work, store, crash_on_b, workers=1)
+
+    fetched = []
+
+    def recording(url):
+        fetched.append(url)
+        return blobs[url]
+
+    pipeline.run_sync(work, store, recording, workers=1)
+    index = StoreIndex.load(store)
+    assert all(index.complete(u) for u in (A, B, MISMATCH))
+    assert "https://img.test/a.png" not in fetched  # uploaded before the crash, not refetched
 
 
 def test_sync_regenerates_missing_thumbnail_from_store(synced, work, store):
@@ -67,10 +129,10 @@ def test_sync_regenerates_missing_thumbnail_from_store(synced, work, store):
     assert again["images_uploaded"] == 0 and again["thumbnails_uploaded"] == 1
 
 
-def test_build_validate_publish(synced, work, store):
+def test_build_validate_publish(synced, work, store, blobs):
     report = pipeline.run_build(work, store)
     assert report["rows"] == {
-        "images": 2,
+        "images": 3,
         "boxes": 3,
         "tags": 1,
         "collections": 1,
@@ -86,14 +148,18 @@ def test_build_validate_publish(synced, work, store):
     assert validation.ok, validation.errors
     assert any("outside" in w for w in validation.warnings)
 
+    images = pq.read_table(work.table_file("images")).to_pylist()
+    sha = {r["image_uuid"]: r["sha256"] for r in images}
+    assert sha[MISMATCH] == sha256_hex(blobs["https://img.test/bad-sha.png"])
+
     row = pipeline.run_publish(work, store, notes="first release")
-    assert row["n_images"] == 2 and row["n_concepts"] == 2
+    assert row["n_images"] == 3 and row["n_concepts"] == 2
     for name in TABLES:
         assert store.exists(table_key(name, work.release))
     assert store.exists("README.md") and store.exists("LICENSE.md")
 
     coco = json.loads(store.get_bytes(coco_key(work.release)))
-    assert len(coco["images"]) == 2 and len(coco["annotations"]) == 3
+    assert len(coco["images"]) == 3 and len(coco["annotations"]) == 3
     assert {c["name"] for c in coco["categories"]} == {"Nanomia", "Sebastes"}
     assert coco["images"][0]["coco_url"].startswith("file://")
 
@@ -101,7 +167,7 @@ def test_build_validate_publish(synced, work, store):
     assert releases == [
         {
             "release": work.release,
-            "n_images": "2",
+            "n_images": "3",
             "n_boxes": "3",
             "n_concepts": "2",
             "notes": "first release",

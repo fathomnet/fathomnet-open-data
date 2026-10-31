@@ -98,7 +98,8 @@ def blobs():
         "https://img.test/a.png": png_bytes(),
         "https://img.test/b.jpg": jpeg_bytes(),
         "https://img.test/c.png": png_bytes(color=(1, 2, 3)),
-        "https://img.test/bad.png": png_bytes(color=(9, 9, 9)),
+        "https://img.test/bad-sha.png": png_bytes(color=(9, 9, 9)),
+        "https://img.test/wrong-size.png": png_bytes(size=(32, 32)),
     }
 
 
@@ -124,11 +125,19 @@ def fake_api(blobs):
         valid=False,
         boxes=[make_box("box-4")],
     )
+    # FathomNet's checksum is wrong but the size matches: accepted.
     mismatch = make_image(
         "dddddddd-0000-0000-0000-000000000004",
-        "https://img.test/bad.png",
-        blobs["https://img.test/bad.png"],
+        "https://img.test/bad-sha.png",
+        blobs["https://img.test/bad-sha.png"],
         sha="0" * 64,
+    )
+    # Checksum and size both disagree: rejected.
+    wrong_size = make_image(
+        "eeeeeeee-0000-0000-0000-000000000005",
+        "https://img.test/wrong-size.png",
+        blobs["https://img.test/wrong-size.png"],
+        sha="1" * 64,
     )
     upload = {
         "uuid": "upload-1",
@@ -155,7 +164,7 @@ def fake_api(blobs):
         ("upload-1", invalid["uuid"]),
         ("upload-2", a["uuid"]),
     ]
-    return FakeClient([a, b, invalid, mismatch], [upload, rejected], links)
+    return FakeClient([a, b, invalid, mismatch, wrong_size], [upload, rejected], links)
 
 
 @pytest.fixture

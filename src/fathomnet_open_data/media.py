@@ -2,6 +2,7 @@
 
 import hashlib
 import io
+from dataclasses import dataclass
 
 from PIL import Image
 
@@ -28,16 +29,25 @@ def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def detect_format(data: bytes) -> tuple[str, str]:
-    """Return (extension, media type) from the image bytes, not the URL."""
+@dataclass(frozen=True)
+class ImageInfo:
+    ext: str
+    media_type: str
+    width: int
+    height: int
+
+
+def inspect_image(data: bytes) -> ImageInfo:
+    """Format and size from the image bytes, not the URL."""
     try:
         with Image.open(io.BytesIO(data)) as im:
-            fmt = im.format
-    except Exception as e:
+            fmt, (width, height) = im.format, im.size
+    except Exception as e:  # Pillow raises many types for bad input
         raise UnsupportedImage(f"not a readable image: {e}") from e
     if fmt not in FORMATS:
         raise UnsupportedImage(f"unsupported image format {fmt}")
-    return FORMATS[fmt]
+    ext, media_type = FORMATS[fmt]
+    return ImageInfo(ext, media_type, width, height)
 
 
 def _to_rgb(im: Image.Image) -> Image.Image:
