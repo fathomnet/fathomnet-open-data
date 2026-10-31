@@ -90,3 +90,8 @@ uv run jupyter lab get-to-know-a-dataset.ipynb
 
 Outputs are stripped before commit; please run `uv run nbstripout get-to-know-a-dataset.ipynb` before
 opening a pull request.
+
+## Maintainers
+
+The bucket is built and published by the `fathomnet-release` CLI in [`src/`](src/fathomnet_open_data).
+See [docs/releasing.md](docs/releasing.md).

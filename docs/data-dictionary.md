@@ -5,7 +5,9 @@
 All metadata tables are Parquet, one directory per table per release (see
 [bucket-layout.md](bucket-layout.md)). Column names are `snake_case`. Timestamps are UTC
 (`TIMESTAMP` with microsecond precision). Nullable columns are common: position, depth, time, and
-environmental fields are only present when the contributor supplied them.
+environmental fields are only present when the contributor supplied them, and the `group_of`, `occluded`,
+and `truncated` box flags are null when the contributor did not set them (use
+`coalesce(occluded, false)` in SQL).
 
 Join keys:
 
