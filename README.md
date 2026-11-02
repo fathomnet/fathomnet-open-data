@@ -28,7 +28,8 @@ without downloading the whole corpus.
 - **Video** (planned): source video that FathomNet frames were extracted from.
 
 See [docs/bucket-layout.md](docs/bucket-layout.md) for the prefix structure and
-[docs/data-dictionary.md](docs/data-dictionary.md) for every table and column.
+[docs/data-dictionary.md](docs/data-dictionary.md) for every table and column. [docs/](docs/README.md) lists
+all documentation pages.
 
 ## Quick start
 
