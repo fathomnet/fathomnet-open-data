@@ -44,12 +44,8 @@ format and size conversions, which Creative Commons 4.0 licenses permit as techn
 
 ## Citation
 
-Please cite:
-
-> Katija, K., Orenstein, E., Schlining, B., Lundsten, L., Barnard, K., Sainz, G., Boulais, O., Cromwell,
-> M., Butler, E., Woodward, B., and Bell, K. L. C. (2022). FathomNet: A global image database for enabling
-> artificial intelligence in the ocean. *Scientific Reports*, 12, 15914.
-> https://doi.org/10.1038/s41598-022-19939-2
+Please cite the FathomNet article listed in [CITATION.cff](../CITATION.cff) (also shown in the
+[README](../README.md#licensing-and-citation)).
 
 Also cite any collection you use that provides a `collections.bibliographic_citation`. In a data
 availability statement, you can reference the dataset as "available at

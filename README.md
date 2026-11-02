@@ -73,6 +73,9 @@ If you use FathomNet, please cite:
 > artificial intelligence in the ocean. *Scientific Reports*, 12, 15914.
 > https://doi.org/10.1038/s41598-022-19939-2
 
+Machine-readable metadata is in [CITATION.cff](CITATION.cff); GitHub's "Cite this repository"
+button exports it as APA or BibTeX.
+
 ## Related tools
 
 - [fathomnet-py](https://github.com/fathomnet/fathomnet-py): Python client for the live FathomNet REST

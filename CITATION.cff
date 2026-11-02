@@ -1,0 +1,72 @@
+# Citation metadata for FathomNet on the Registry of Open Data on AWS.
+# preferred-citation is taken from the article's publisher metadata:
+# https://www.nature.com/articles/s41598-022-19939-2
+cff-version: 1.2.0
+message: "If you use FathomNet, please cite the article below."
+type: dataset
+title: "FathomNet"
+abstract: >-
+  FathomNet is an open-source image database for understanding the ocean and its inhabitants. It
+  contains expertly annotated underwater images with bounding boxes and classifications.
+authors:
+  - name: "Monterey Bay Aquarium Research Institute"
+    email: fathomnet@mbari.org
+    website: "https://www.mbari.org"
+url: "https://www.fathomnet.org"
+repository-code: "https://github.com/fathomnet/fathomnet-open-data"
+keywords:
+  - ocean
+  - marine biology
+  - underwater imagery
+  - object detection
+  - computer vision
+preferred-citation:
+  type: article
+  title: "FathomNet: A global image database for enabling artificial intelligence in the ocean"
+  journal: "Scientific Reports"
+  volume: 12
+  issue: 1
+  start: 15914
+  year: 2022
+  month: 9
+  date-published: 2022-09-23
+  doi: 10.1038/s41598-022-19939-2
+  url: "https://www.nature.com/articles/s41598-022-19939-2"
+  issn: 2045-2322
+  publisher:
+    name: "Springer Science and Business Media LLC"
+  license: CC-BY-4.0
+  authors:
+    - family-names: Katija
+      given-names: Kakani
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Orenstein
+      given-names: Eric
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Schlining
+      given-names: Brian
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Lundsten
+      given-names: Lonny
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Barnard
+      given-names: Kevin
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Sainz
+      given-names: Giovanna
+      affiliation: "Monterey Bay Aquarium Research Institute"
+    - family-names: Boulais
+      given-names: Oceane
+      affiliation: "NOAA Southeast Fisheries Science Center"
+    - family-names: Cromwell
+      given-names: Megan
+      affiliation: "NOAA National Centers for Environmental Information"
+    - family-names: Butler
+      given-names: Erin
+      affiliation: "CVision AI Inc."
+    - family-names: Woodward
+      given-names: Benjamin
+      affiliation: "CVision AI Inc."
+    - family-names: Bell
+      given-names: "Katherine L. C."
+      affiliation: "Ocean Discovery League"
