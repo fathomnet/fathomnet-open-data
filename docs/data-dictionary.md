@@ -9,6 +9,12 @@ environmental fields are only present when the contributor supplied them, and th
 and `truncated` box flags are null when the contributor did not set them (use
 `coalesce(occluded, false)` in SQL).
 
+> **Contributors choose the licenses.** Each FathomNet contributor selects the licenses for their own
+> images and annotations, and that license is attached to every record: `image_license` on each image
+> and `annotation_license` on each bounding box. There is no single license for the dataset, and an
+> image and its annotations can be licensed differently. Check both before you reuse anything; see
+> [licensing.md](licensing.md).
+
 Join keys:
 
 ```
@@ -30,7 +36,7 @@ One row per image.
 | `sha256` | string | Lowercase hex SHA-256 of the object in this bucket. Use it to verify downloads. |
 | `media_type` | string | MIME type detected from the image bytes: `image/jpeg`, `image/png`, or `image/tiff`. |
 | `width`, `height` | int32 | Image size in pixels. |
-| `image_license` | string | [SPDX id](https://spdx.org/licenses/) of the image license, e.g. `CC-BY-4.0`. |
+| `image_license` | string | **License chosen by the contributor** for this image, as an [SPDX id](https://spdx.org/licenses/), e.g. `CC-BY-4.0`. Applies to the image object and its thumbnail. |
 | `imaging_type` | string | Free text platform/method, e.g. `ROV`, `Drop Camera`. Often null. |
 | `recorded_timestamp` | timestamp | When the image was captured. |
 | `latitude`, `longitude` | double | WGS84 decimal degrees. |
@@ -60,7 +66,7 @@ One row per bounding box annotation.
 | `review_state` | string | `UNVERIFIED` (default), `VERIFIED` (confirmed by a reviewer), `REJECTED`, or `UNKNOWN`. |
 | `last_reviewed_timestamp` | timestamp | When `review_state` last changed. |
 | `user_defined_key` | string | Contributor's own id for the annotation. Not unique. |
-| `annotation_license` | string | SPDX id of the annotation license. May differ from the image license. |
+| `annotation_license` | string | **License chosen by the contributor** for this annotation (label, box, and flags), as an SPDX id. May differ from the image license. |
 | `modified_timestamp` | timestamp | Last time the box changed in FathomNet. |
 
 Not every organism in an image is necessarily boxed. Many collections were annotated for a subset of
@@ -156,4 +162,5 @@ valid (for example, broken source links) are also left out.
 `s3_key`, `coco_url` is the public HTTPS URL of the object, and `bbox` is `[x, y, width, height]` with a
 top-left origin (the same as the `boxes` table). Category names are `boxes.concept`. FathomNet-specific
 fields (`image_license`, `annotation_license`, `review_state`, `image_uuid`, `box_uuid`) are added to the
-`images` and `annotations` entries.
+`images` and `annotations` entries, so the contributor-chosen license stays attached to every image and
+box in COCO form too.

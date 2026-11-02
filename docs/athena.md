@@ -7,6 +7,10 @@
 for the data each query scans. For small, interactive work, DuckDB or Polars on your own machine (see
 the [README](../README.md)) needs no account.
 
+Every image and annotation record includes the license its contributor chose (`image_license`,
+`annotation_license`). Filter on them if your use has license constraints; see
+[licensing.md](licensing.md).
+
 ## Create the tables
 
 Run these once in the Athena query editor. They use
@@ -97,6 +101,9 @@ GROUP BY b.concept
 ORDER BY n_boxes DESC
 LIMIT 50;
 ```
+
+To keep only content you can use commercially, for example, add
+`AND i.image_license IN ('CC0-1.0', 'CC-BY-4.0') AND b.annotation_license IN ('CC0-1.0', 'CC-BY-4.0')`.
 
 Select `DISTINCT i.s3_key` instead of the aggregate to get a manifest of matching images. A training
 job on Amazon SageMaker or Amazon EC2 can then read only those objects from `s3://fathomnet-pds/images/`.

@@ -8,5 +8,7 @@ and AI-ready annotations from the Monterey Bay Aquarium Research Institute (MBAR
 - Release history: `metadata/releases.csv`
 - Contact: fathomnet@mbari.org
 
-Images and annotations are licensed per asset. Check the `image_license` and `annotation_license`
-columns before reuse; see `LICENSE.md`.
+**Licenses are chosen by each contributor and attached to every record.** There is no single license
+for this bucket. Each image's license is in the `image_license` column of the `images` table and each
+annotation's license is in the `annotation_license` column of the `boxes` table; they can differ.
+Check both before reuse; see `LICENSE.md`.

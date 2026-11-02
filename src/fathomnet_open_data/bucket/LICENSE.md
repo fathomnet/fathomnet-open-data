@@ -1,6 +1,7 @@
 # Licensing
 
-FathomNet content is licensed per asset by its contributor. There is no single license for this bucket.
+There is no single license for this bucket. Each FathomNet contributor chooses the licenses for their
+own images and annotations, and that license is attached to every record:
 
 - Each image's license is the SPDX id in `metadata/images/.../*.parquet`, column `image_license`.
 - Each bounding box's license is the SPDX id in `metadata/boxes/.../*.parquet`, column

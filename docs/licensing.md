@@ -5,9 +5,14 @@ the [FathomNet Data Use Policy](https://www.fathomnet.org/datause),
 [Terms of Use](https://www.fathomnet.org/terms), and the
 [accepted licenses](https://database.fathomnet.org/fathomnet/#/license) page.
 
-## Per-asset licenses
+## Contributors choose the license of every record
 
-Images and annotations are licensed **independently**, and each one carries its own license:
+FathomNet does not apply one license to the dataset. When contributors upload to FathomNet, they choose
+the licenses for their own images and annotations from FathomNet's
+[accepted licenses](https://database.fathomnet.org/fathomnet/#/license). That choice is attached to each
+record and published with it in every release.
+
+Images and annotations are licensed **independently**, and each record carries its own license:
 
 - `images.image_license`: the license of the image file.
 - `boxes.annotation_license`: the license of the annotation (label, box, and related metadata).

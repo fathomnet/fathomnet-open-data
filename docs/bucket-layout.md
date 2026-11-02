@@ -8,15 +8,15 @@ to be signed (`--no-sign-request` with the AWS CLI, `signature_version=UNSIGNED`
 ```
 s3://fathomnet-pds/
   README.md                      Pointer to this documentation
-  LICENSE.md                     Per-asset licensing summary (see licensing.md)
+  LICENSE.md                     Contributor-chosen, per-record licensing (see licensing.md)
   images/
     <image_uuid>.<ext>           Original image bytes (jpg, png, tif)
   thumbnails/
     <image_uuid>.jpg             JPEG, longest side 512 px
   metadata/
     releases.csv                 One row per release: date, counts, notes
-    images/release=<YYYY-MM-DD>/part-<n>.parquet
-    boxes/release=<YYYY-MM-DD>/part-<n>.parquet
+    images/release=<YYYY-MM-DD>/part-<n>.parquet   Includes image_license per image
+    boxes/release=<YYYY-MM-DD>/part-<n>.parquet    Includes annotation_license per box
     tags/release=<YYYY-MM-DD>/part-<n>.parquet
     collections/release=<YYYY-MM-DD>/part-<n>.parquet
     image_collections/release=<YYYY-MM-DD>/part-<n>.parquet
@@ -28,6 +28,11 @@ s3://fathomnet-pds/
 ```
 
 ## Design notes
+
+**Licenses travel with each record.** Contributors choose the licenses for their own images and
+annotations. The image license is in `images.image_license` and applies to the object under `images/`
+and its thumbnail; the annotation license is in `boxes.annotation_license`. There is no bucket-wide
+license. See [licensing.md](licensing.md).
 
 **Images are immutable and keyed by UUID.** An image object is written once and never changed, so image
 keys are stable across releases. The image UUID is the same one used by the
@@ -43,7 +48,8 @@ downloads.
 They are convenient for quick looks, dashboards, and embedding sanity checks. Train on the originals.
 
 **Metadata is versioned by release.** FathomNet is updated ad hoc as new contributions are reviewed. Each
-release writes a complete snapshot of every metadata table under a new `release=<YYYY-MM-DD>` prefix.
+release writes a complete snapshot of every metadata table under a new `release=<YYYY-MM-DD>` prefix,
+including each record's license as it stood at that release.
 Earlier releases are kept, so a query pinned to a release returns the same answer later. The prefixes use
 [Hive partition naming](https://docs.aws.amazon.com/athena/latest/ug/partitions.html), which DuckDB,
 Polars, PyArrow, Spark, and Amazon Athena understand natively.
