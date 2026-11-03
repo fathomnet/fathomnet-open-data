@@ -15,6 +15,8 @@ Image.MAX_IMAGE_PIXELS = 1_000_000_000
 # Pillow format -> (key extension, media type)
 FORMATS = {
     "JPEG": ("jpg", "image/jpeg"),
+    # Multi-Picture JPEG (some cameras): a standard JPEG with extra frames appended.
+    "MPO": ("jpg", "image/jpeg"),
     "PNG": ("png", "image/png"),
     "TIFF": ("tif", "image/tiff"),
 }

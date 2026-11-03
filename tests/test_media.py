@@ -58,3 +58,21 @@ def test_thumbnail_scales_16_bit():
     thumb = decode(make_thumbnail(encode(im, "TIFF")))
     assert thumb.mode == "RGB"
     assert thumb.getpixel((10, 10))[0] >= 250  # full scale, not clipped to garbage
+
+
+def test_mpo_is_stored_as_jpeg():
+    import io
+
+    from PIL import Image
+
+    from fathomnet_open_data.media import inspect_image, make_thumbnail
+
+    first, second = Image.new("RGB", (64, 48), (1, 2, 3)), Image.new("RGB", (64, 48), (4, 5, 6))
+    buf = io.BytesIO()
+    first.save(buf, format="MPO", save_all=True, append_images=[second])
+    data = buf.getvalue()
+    with Image.open(io.BytesIO(data)) as im:
+        assert im.format == "MPO"
+    info = inspect_image(data)
+    assert (info.ext, info.media_type, info.width, info.height) == ("jpg", "image/jpeg", 64, 48)
+    assert make_thumbnail(data)[:2] == b"\xff\xd8"
