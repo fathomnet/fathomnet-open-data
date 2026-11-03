@@ -194,3 +194,27 @@ def test_publish_refuses_invalid_release(synced, work, store):
     with pytest.raises(pipeline.StepError, match="validation failed"):
         pipeline.run_publish(work, store, notes="")
     assert not store.exists(RELEASES_KEY)
+
+
+def test_fatal_error_stops_sync_without_draining_queue(store):
+    import threading
+
+    import pytest
+
+    from fathomnet_open_data.sync import sync_objects
+
+    from .conftest import make_image, png_bytes
+
+    data = png_bytes()
+    images = [make_image(f"u{i:04d}", f"https://img.test/{i}.png", data) for i in range(200)]
+    calls = []
+    lock = threading.Lock()
+
+    def fetch(url):
+        with lock:
+            calls.append(url)
+        raise RuntimeError("store credentials expired")  # not a per-image error
+
+    with pytest.raises(RuntimeError):
+        sync_objects(images, store, fetch=fetch, workers=2)
+    assert len(calls) < 20

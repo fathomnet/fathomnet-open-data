@@ -188,27 +188,33 @@ def sync_objects(
     )
 
     manifest = ManifestWriter(store)
+    pool = ThreadPoolExecutor(max_workers=workers)
     try:
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {pool.submit(_sync_one, img, store, fetch, index): img for img in todo}
-            for i, future in enumerate(as_completed(futures), 1):
-                img = futures[future]
-                try:
-                    outcome = future.result()
-                except PER_IMAGE_ERRORS as e:
-                    result.failures.append(
-                        {"image_uuid": img["uuid"], "url": img.get("url"), "error": str(e)}
-                    )
-                else:
-                    result.images_uploaded += outcome.image_uploaded
-                    result.thumbnails_uploaded += outcome.thumbnail_uploaded
-                    if outcome.checksum_mismatch:
-                        result.checksum_mismatches.append(outcome.checksum_mismatch)
-                    if outcome.manifest_row:
-                        manifest.add(outcome.manifest_row)
-                        result.manifest_entries += 1
-                if i % 1000 == 0:
-                    log.info("synced %d/%d (%d failures)", i, len(todo), len(result.failures))
+        futures = {pool.submit(_sync_one, img, store, fetch, index): img for img in todo}
+        for i, future in enumerate(as_completed(futures), 1):
+            img = futures[future]
+            try:
+                outcome = future.result()
+            except PER_IMAGE_ERRORS as e:
+                result.failures.append(
+                    {"image_uuid": img["uuid"], "url": img.get("url"), "error": str(e)}
+                )
+            else:
+                result.images_uploaded += outcome.image_uploaded
+                result.thumbnails_uploaded += outcome.thumbnail_uploaded
+                if outcome.checksum_mismatch:
+                    result.checksum_mismatches.append(outcome.checksum_mismatch)
+                if outcome.manifest_row:
+                    manifest.add(outcome.manifest_row)
+                    result.manifest_entries += 1
+            if i % 1000 == 0:
+                log.info("synced %d/%d (%d failures)", i, len(todo), len(result.failures))
+    except BaseException:
+        # Stop promptly on Ctrl-C or a store error instead of draining the whole queue.
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise
+    else:
+        pool.shutdown()
     finally:
         # Record checksums for everything uploaded so far, even if the run is interrupted.
         manifest.flush()
