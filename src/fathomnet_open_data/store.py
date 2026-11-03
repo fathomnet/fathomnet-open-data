@@ -89,7 +89,11 @@ class S3Store:
             client = boto3.client(
                 "s3",
                 region_name=region,
-                config=Config(max_pool_connections=64, retries={"mode": "adaptive"}),
+                config=Config(
+                    max_pool_connections=64,
+                    # Long syncs see occasional dropped connections; retry well past the default 3.
+                    retries={"mode": "adaptive", "max_attempts": 10},
+                ),
             )
         self.client = client
 
