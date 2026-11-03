@@ -1,9 +1,11 @@
 # Bucket layout
 
-> **Draft.** Proposed layout; subject to change before launch.
+> **Pre-launch.** The bucket exists but is empty until the first release is published. The layout may
+> still change before launch.
 
 The dataset lives in a single public bucket, `s3://fathomnet-pds`, in `us-west-2`. Requests do not need
-to be signed (`--no-sign-request` with the AWS CLI, `signature_version=UNSIGNED` with boto3).
+to be signed (`--no-sign-request` with the AWS CLI, `signature_version=UNSIGNED` with boto3), but they
+must use HTTPS; plain HTTP is refused.
 
 ```
 s3://fathomnet-pds/
@@ -65,6 +67,7 @@ Parquet tables, for use with tools that expect COCO. The Parquet tables are the 
 
 ## Notifications
 
-New objects are announced on a public SNS topic,
-`arn:aws:sns:us-west-2:<account_id>:fathomnet-pds-object_created`. Subscribe an SQS queue or Lambda
-function to react to new releases.
+Every new object is announced on a public SNS topic,
+`arn:aws:sns:us-west-2:639589055367:fathomnet-pds-object_created`. Subscribe an SQS queue or Lambda
+function to react to new images or releases; a release is complete when `metadata/releases.csv` is
+rewritten, since it is written last.

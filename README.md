@@ -1,7 +1,7 @@
 # FathomNet Open Data on AWS
 
-> **Draft.** The S3 bucket does not exist yet. Bucket names, prefixes, and table schemas below are
-> proposals and may change before launch.
+> **Pre-launch.** The bucket exists but is empty until the first release is published. Prefixes and
+> table schemas may still change before launch.
 
 [FathomNet](https://www.fathomnet.org) is a global, open-source database of ocean imagery and AI-ready
 annotations, operated by the [Monterey Bay Aquarium Research Institute (MBARI)](https://www.mbari.org/).

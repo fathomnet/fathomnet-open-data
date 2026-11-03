@@ -34,10 +34,25 @@ do not share it. Only the tables built from it are published.
 **Releases are immutable.** `publish` refuses to overwrite an existing `release=<date>` partition
 unless you pass `--force`. Use a new date for a corrected release.
 
+## Infrastructure
+
+- **Account:** `fathomnet-open-data` (639589055367), linked to the AWS Open Data billing organization.
+  The sponsorship covers S3 only; do not create other resources in it.
+- **Bucket:** `s3://fathomnet-pds` in `us-west-2`, created with the Open Data program's CloudFormation
+  template ([pds-bucket-cf.yml](https://s3-us-west-2.amazonaws.com/opendata.aws/pds-bucket-cf.yml)).
+  The template sets a public read and list bucket policy (HTTPS only), CORS for `GET`/`HEAD`, a
+  lifecycle rule that moves objects to Intelligent-Tiering and aborts incomplete multipart uploads
+  after 7 days, CloudWatch request metrics, and the SNS topic
+  `arn:aws:sns:us-west-2:639589055367:fathomnet-pds-object_created`. Versioning is off, so deletes are
+  permanent. Anything written to the bucket is public immediately.
+- **Uploader:** IAM user `fathomnet-release`, with only the customer-managed policy in
+  [infra/release-writer-policy.json](../infra/release-writer-policy.json) (list the bucket; get, put,
+  and delete objects). It cannot change bucket settings.
+
 ## Prerequisites
 
-- AWS credentials for the sponsored account with write access to the bucket, for example
-  `export AWS_PROFILE=fathomnet-open-data`.
+- An access key for `fathomnet-release` in a local AWS CLI profile, then
+  `export AWS_PROFILE=fathomnet-open-data`. Check it with `aws sts get-caller-identity`.
 - Disk for the snapshot (about 1 GB) and the built tables. Images stream straight to S3 and are not
   kept locally.
 

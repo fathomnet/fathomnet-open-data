@@ -1,6 +1,6 @@
 # Querying with Amazon Athena
 
-> **Draft.** Untested until the bucket exists.
+> **Pre-launch.** Untested until the first release is published.
 
 [Amazon Athena](https://aws.amazon.com/athena/) runs SQL directly over the Parquet tables in
 `s3://fathomnet-pds/metadata/`. You need an AWS account and an S3 location for query results; you pay
