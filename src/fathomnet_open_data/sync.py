@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+import botocore.exceptions
 import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
@@ -52,10 +53,13 @@ class SyncError(RuntimeError):
     pass
 
 
-# Problems with one image are recorded and skipped. Anything else (for example, S3 credentials)
-# stops the run; rerunning resumes from what is already in the store.
+# Problems with one image are recorded and skipped, including dropped connections to the store
+# (retried on the next run). Anything else (for example, S3 credentials or permissions) stops the
+# run; rerunning resumes from what is already in the store.
 PER_IMAGE_ERRORS = (
     requests.RequestException,
+    botocore.exceptions.ConnectionError,
+    botocore.exceptions.HTTPClientError,
     SyncError,
     ValueError,
     OSError,

@@ -218,3 +218,22 @@ def test_fatal_error_stops_sync_without_draining_queue(store):
     with pytest.raises(RuntimeError):
         sync_objects(images, store, fetch=fetch, workers=2)
     assert len(calls) < 20
+
+
+def test_dropped_store_connection_is_a_per_image_failure(fake_api, fetch, store):
+    from botocore.exceptions import ConnectionClosedError
+
+    from fathomnet_open_data.sync import sync_objects
+
+    real_put = store.put_bytes
+
+    def flaky_put(key, data, content_type, metadata=None):
+        if key.startswith("images/aaaaaaaa"):
+            raise ConnectionClosedError(endpoint_url="https://bucket.test/" + key)
+        return real_put(key, data, content_type, metadata)
+
+    store.put_bytes = flaky_put
+    result = sync_objects(fake_api.iter_images(), store, fetch=fetch, workers=1)
+    failed = {f["image_uuid"] for f in result.failures}
+    assert "aaaaaaaa-0000-0000-0000-000000000001" in failed
+    assert result.images_uploaded >= 1  # the run kept going
