@@ -25,6 +25,7 @@ from .keys import image_key, manifest_key, thumbnail_key
 from .media import inspect_image, make_thumbnail, sha256_hex
 from .snapshot import is_public
 from .store import Store, StoreIndex
+from .tls import verify_for
 
 log = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class HttpFetcher:
         session = getattr(self._local, "session", None)
         if session is None:
             session = self._local.session = make_session(pool_size=4)
-        resp = session.get(url, timeout=self.timeout)
+        resp = session.get(url, timeout=self.timeout, verify=verify_for(url))
         resp.raise_for_status()
         return resp.content
 

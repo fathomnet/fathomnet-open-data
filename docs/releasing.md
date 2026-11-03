@@ -28,6 +28,11 @@ recorded, and lists it under `checksum_mismatches` in the sync report. If both c
 disagree, the image is skipped and listed under `failures`. The published `sha256` is always computed
 from the stored bytes.
 
+**Incomplete TLS chains.** Some image hosts omit an intermediate certificate that browsers fetch
+on their own. `src/fathomnet_open_data/tls.py` lists those hosts and the missing certificates (kept in
+`src/fathomnet_open_data/certs/`); each must be cross-signed by a root certifi already trusts. If a sync
+fails with `CERTIFICATE_VERIFY_FAILED` for a new host, add it there rather than disabling verification.
+
 **The raw snapshot is private.** `work/<release>/raw/` contains contributor emails: keep it local and
 do not share it. Only the tables built from it are published.
 
