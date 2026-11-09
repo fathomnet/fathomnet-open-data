@@ -1,8 +1,5 @@
 # FathomNet Open Data on AWS
 
-> **Pre-launch.** The bucket exists but is empty until the first release is published. Prefixes and
-> table schemas may still change before launch.
-
 [FathomNet](https://www.fathomnet.org) is a global, open-source database of ocean imagery and AI-ready
 annotations, operated by the [Monterey Bay Aquarium Research Institute (MBARI)](https://www.mbari.org/).
 Through the [AWS Open Data Sponsorship Program](https://aws.amazon.com/opendata/), a public copy of the
@@ -54,7 +51,7 @@ INSTALL httpfs; LOAD httpfs;
 SET s3_region = 'us-west-2';
 
 SELECT concept, annotation_license, count(*) AS n_boxes
-FROM 's3://fathomnet-pds/metadata/boxes/release=2026-11-01/*.parquet'
+FROM 's3://fathomnet-pds/metadata/boxes/release=2026-11-03/*.parquet'
 GROUP BY ALL
 ORDER BY n_boxes DESC
 LIMIT 10;

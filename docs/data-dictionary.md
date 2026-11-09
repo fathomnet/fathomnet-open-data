@@ -1,7 +1,5 @@
 # Data dictionary
 
-> **Pre-launch.** Schemas may still change before the first release is published.
-
 All metadata tables are Parquet, one directory per table per release (see
 [bucket-layout.md](bucket-layout.md)). Column names are `snake_case`. Timestamps are UTC
 (`TIMESTAMP` with microsecond precision). Nullable columns are common: position, depth, time, and

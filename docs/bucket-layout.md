@@ -1,8 +1,5 @@
 # Bucket layout
 
-> **Pre-launch.** The bucket exists but is empty until the first release is published. The layout may
-> still change before launch.
-
 The dataset lives in a single public bucket, `s3://fathomnet-pds`, in `us-west-2`. Requests do not need
 to be signed (`--no-sign-request` with the AWS CLI, `signature_version=UNSIGNED` with boto3), but they
 must use HTTPS; plain HTTP is refused.

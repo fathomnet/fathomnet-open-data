@@ -1,6 +1,7 @@
 # Querying with Amazon Athena
 
-> **Pre-launch.** Untested until the first release is published.
+> **Not yet tested in Athena.** The table definitions match the published Parquet schemas, but these
+> queries have not been run in Athena. Please open an issue if one fails.
 
 [Amazon Athena](https://aws.amazon.com/athena/) runs SQL directly over the Parquet tables in
 `s3://fathomnet-pds/metadata/`. You need an AWS account and an S3 location for query results; you pay
@@ -94,7 +95,7 @@ Always filter on `release` so Athena scans one snapshot.
 SELECT b.concept, count(*) AS n_boxes
 FROM fathomnet.boxes b
 JOIN fathomnet.images i ON i.image_uuid = b.image_uuid AND i.release = b.release
-WHERE b.release = '2026-11-01'
+WHERE b.release = '2026-11-03'
   AND b.review_state = 'VERIFIED'
   AND i.depth_meters > 1000
 GROUP BY b.concept
