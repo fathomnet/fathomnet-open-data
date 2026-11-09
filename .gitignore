@@ -4,3 +4,4 @@ __pycache__/
 .ruff_cache/
 work/
 .pytest_cache/
+fathomnet-subset/
