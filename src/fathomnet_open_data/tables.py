@@ -25,6 +25,13 @@ def parse_timestamp(value: str | None) -> datetime | None:
     return ts.astimezone(UTC) if ts.tzinfo else ts.replace(tzinfo=UTC)
 
 
+def clean_label(value: str | None) -> str | None:
+    """Strip surrounding whitespace; a blank label becomes null so it is not counted as a concept."""
+    if value is None:
+        return None
+    return value.strip() or None
+
+
 def image_row(img: dict, s3_key: str, sha256: str) -> dict:
     """`sha256` is of the stored object (from the manifest), not FathomNet's stored value."""
     ext = PurePosixPath(s3_key).suffix.lstrip(".")
@@ -56,8 +63,8 @@ def box_row(box: dict, image_uuid: str) -> dict:
     return {
         "box_uuid": box["uuid"],
         "image_uuid": image_uuid,
-        "concept": box.get("concept"),
-        "alt_concept": box.get("altConcept"),
+        "concept": clean_label(box.get("concept")),
+        "alt_concept": clean_label(box.get("altConcept")),
         "x": box.get("x"),
         "y": box.get("y"),
         "width": box.get("width"),

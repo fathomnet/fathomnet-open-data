@@ -5,6 +5,7 @@ import pyarrow as pa
 from fathomnet_open_data import schema
 from fathomnet_open_data.tables import (
     box_row,
+    clean_label,
     collection_row,
     image_row,
     parse_timestamp,
@@ -42,3 +43,15 @@ def test_image_row_derives_media_type_from_key():
     assert row["media_type"] == "image/jpeg"
     assert row["sha256"] == "stored"  # from the manifest, not FathomNet
     assert row["thumbnail_s3_key"] == "thumbnails/u1.jpg"
+
+
+def test_clean_label_strips_whitespace_and_nulls_blanks():
+    assert clean_label("Sebastes ") == "Sebastes"
+    assert clean_label("Stylasteridae\t") == "Stylasteridae"
+    assert clean_label("") is None and clean_label("  ") is None and clean_label(None) is None
+
+
+def test_box_row_cleans_labels():
+    box = make_box("b1") | {"concept": "", "altConcept": " head "}
+    row = box_row(box, "u1")
+    assert row["concept"] is None and row["alt_concept"] == "head"

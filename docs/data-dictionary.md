@@ -117,7 +117,9 @@ Many-to-many link between images and collections. An image can appear in more th
 ## Taxonomy
 
 `boxes.concept` is a free-text label. Most labels are [WoRMS](https://www.marinespecies.org/) scientific
-names, at whatever rank the annotator could identify, but nothing in the bucket enforces that. To resolve
+names, at whatever rank the annotator could identify, but nothing in the bucket enforces that. Labels
+are copied from FathomNet with surrounding whitespace removed; a blank label is stored as null, and such
+boxes are left out of the COCO export and the `n_concepts` count. To resolve
 labels to accepted names, synonyms, or lineage (for example, to roll species up to family), use
 FathomNet's WoRMS name server at https://database.fathomnet.org/worms
 ([API docs](https://database.fathomnet.org/worms/docs)), for example:
